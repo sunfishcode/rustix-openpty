@@ -24,4 +24,4 @@ errno = { version = "0.3.1", default-features = false }
 rustix = { version = "0.37.19", features = ["termios"] }
 
 [patch.crates-io]
-rustix = { git = "https://github.com/bytecodealliance/rustix/" }
+rustix = { git = "https://github.com/bytecodealliance/rustix/", branch = "main" }
