@@ -206,7 +206,7 @@ pub unsafe fn closefrom(from: RawFd) {
 
     let dir = openat(
         cwd(),
-        "/dev/fd",
+        rustix::cstr!("/dev/fd"),
         OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC,
         Mode::empty(),
     )
@@ -218,10 +218,11 @@ pub unsafe fn closefrom(from: RawFd) {
     let mut iter = RawDir::new(dir, &mut buf);
     while let Some(entry) = iter.next() {
         let entry = entry.unwrap();
-        let name = str::from_utf8(entry.file_name().to_bytes()).unwrap();
-        if name == "." || name == ".." {
+        let name_bytes = entry.file_name().to_bytes();
+        if name_bytes == b"." || name_bytes == b".." {
             continue;
         }
+        let name = str::from_utf8(name_bytes).unwrap();
         let num = name.parse::<RawFd>().unwrap();
 
         if num >= from && num != dir_raw_fd {
