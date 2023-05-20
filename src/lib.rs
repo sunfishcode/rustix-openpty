@@ -7,9 +7,8 @@
 //!
 //! [Linux]: https://man7.org/linux/man-pages/man7/pty.7.html
 //! [FreeBSD]: https://man.freebsd.org/cgi/man.cgi?query=pty&sektion=4
-#![cfg_attr(any(target_os = "android", target_os = "linux"), deny(unsafe_code))]
 
-use rustix::fd::OwnedFd;
+use rustix::fd::{AsFd, AsRawFd, OwnedFd, RawFd};
 use rustix::io;
 use rustix::termios::{Termios, Winsize};
 
@@ -118,7 +117,7 @@ pub fn openpty(termios: Option<&Termios>, winsize: Option<&Winsize>) -> io::Resu
 }
 
 #[cfg(not(any(target_os = "android", target_os = "linux")))]
-fn set_cloexec<Fd: rustix::fd::AsFd>(fd: Fd) -> io::Result<()> {
+fn set_cloexec<Fd: AsFd>(fd: Fd) -> io::Result<()> {
     use rustix::fs::{fcntl_getfd, fcntl_setfd, FdFlags};
 
     let fd = fd.as_fd();
@@ -191,4 +190,42 @@ fn _login_tty(fd: OwnedFd) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+/// Close all open file descriptors that are at least as great as `from`.
+///
+/// # Safety
+///
+/// This can close files out from underneath libraries, leaving them holding
+/// dangling file descriptors. It's meant for use in spawning new processes
+/// where the existing process state is about to be overwritten anyway.
+pub unsafe fn closefrom(from: RawFd) {
+    use core::mem::MaybeUninit;
+    use core::str;
+    use rustix::fs::{cwd, openat, Mode, OFlags, RawDir};
+
+    let dir = openat(
+        cwd(),
+        "/dev/fd",
+        OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC,
+        Mode::empty(),
+    )
+    .unwrap();
+    let dir_raw_fd = dir.as_fd().as_raw_fd();
+
+    // We can use a fixed-sized buffer because `/dev/fd` names are only so big.
+    let mut buf = [MaybeUninit::uninit(); 1024];
+    let mut iter = RawDir::new(dir, &mut buf);
+    while let Some(entry) = iter.next() {
+        let entry = entry.unwrap();
+        let name = str::from_utf8(entry.file_name().to_bytes()).unwrap();
+        if name == "." || name == ".." {
+            continue;
+        }
+        let num = name.parse::<RawFd>().unwrap();
+
+        if num >= from && num != dir_raw_fd {
+            io::close(num);
+        }
+    }
 }
