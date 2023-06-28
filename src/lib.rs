@@ -8,7 +8,9 @@
 //! [Linux]: https://man7.org/linux/man-pages/man7/pty.7.html
 //! [FreeBSD]: https://man.freebsd.org/cgi/man.cgi?query=pty&sektion=4
 
-use rustix::fd::{AsFd, AsRawFd, OwnedFd, RawFd};
+use rustix::fd::{AsFd, OwnedFd};
+#[cfg(any(target_os = "android", target_os = "linux"))] // for `RawDir`
+use rustix::fd::{AsRawFd, RawFd};
 use rustix::io;
 use rustix::termios::{Termios, Winsize};
 
@@ -52,12 +54,18 @@ pub fn openpty(termios: Option<&Termios>, winsize: Option<&Winsize>) -> io::Resu
     // to set `CLOEXEC` so we do it non-atomically.
     #[cfg(not(any(target_os = "android", target_os = "linux")))]
     {
-        use core::mem::MaybeUninit;
+        use core::mem::{align_of, size_of, MaybeUninit};
         use core::ptr::{null, null_mut};
         use rustix::fd::FromRawFd;
 
+        assert_eq!(size_of::<Termios>(), size_of::<libc::termios>());
+        assert_eq!(align_of::<Termios>(), align_of::<libc::termios>());
+
         let termios: *const libc::termios = match termios {
-            Some(termios) => termios,
+            Some(termios) => {
+                let termios: *const Termios = termios;
+                termios.cast()
+            }
             None => null(),
         };
         let winsize: *const libc::winsize = match winsize {
