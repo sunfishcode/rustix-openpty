@@ -199,6 +199,7 @@ fn _login_tty(fd: OwnedFd) -> io::Result<()> {
 /// This can close files out from underneath libraries, leaving them holding
 /// dangling file descriptors. It's meant for use in spawning new processes
 /// where the existing process state is about to be overwritten anyway.
+#[cfg(any(target_os = "android", target_os = "linux"))] // for `RawDir`
 pub unsafe fn closefrom(from: RawFd) {
     use core::mem::MaybeUninit;
     use core::str;
