@@ -25,7 +25,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [stable, nightly, 1.48]
+        build: [stable, nightly, 1.63]
         include:
           - build: stable
             os: ubuntu-latest
@@ -33,13 +33,12 @@ jobs:
           - build: nightly
             os: ubuntu-latest
             rust: nightly
-          - build: 1.48
+          - build: 1.63
             os: ubuntu-latest
-            rust: 1.48
+            rust: 1.63
 
     env:
       # -D warnings is commented out in our install-rust action; re-add it here.
-      # In theory we should add --cfg criterion here, but criterion doesn't compile under Rust 1.48.
       RUSTFLAGS: -D warnings
     steps:
     - uses: actions/checkout@v3
@@ -75,9 +74,9 @@ jobs:
         sparcv9-sun-solaris
         aarch64-linux-android
         aarch64-apple-ios
-    - if: matrix.rust != '1.48'
+    - if: matrix.rust != '1.63'
       run: rustup target add x86_64-unknown-fuchsia
-    - if: matrix.rust == '1.48'
+    - if: matrix.rust == '1.63'
       run: rustup target add x86_64-fuchsia
 
     - name: Install cross-compilation tools
@@ -95,9 +94,9 @@ jobs:
     - run: cargo check --workspace --release -vv --target=x86_64-apple-darwin --all-targets
     - run: cargo check --workspace --release -vv --target=x86_64-unknown-freebsd --all-targets
     - run: cargo check --workspace --release -vv --target=x86_64-unknown-netbsd --all-targets
-    - if: matrix.rust != '1.48'
+    - if: matrix.rust != '1.63'
       run: cargo check --workspace --release -vv --target=x86_64-unknown-fuchsia --all-targets
-    - if: matrix.rust == '1.48'
+    - if: matrix.rust == '1.63'
       run: cargo check --workspace --release -vv --target=x86_64-fuchsia --all-targets
     - run: cargo check --workspace --release -vv --target=x86_64-unknown-illumos --all-targets
     - run: cargo check --workspace --release -vv --target=i686-unknown-linux-gnu --all-targets
@@ -126,7 +125,7 @@ jobs:
       QEMU_BUILD_VERSION: 7.0.0
     strategy:
       matrix:
-        build: [ubuntu, ubuntu-20.04, i686-linux, aarch64-linux, powerpc64le-linux, riscv64-linux, s390x-linux, arm-linux, ubuntu-stable, ubuntu-1.48, i686-linux-stable, aarch64-linux-stable, riscv64-linux-stable, s390x-linux-stable, mipsel-linux-stable, mips64el-linux-stable, powerpc64le-linux-stable, arm-linux-stable, ubuntu-1.48, i686-linux-1.48, aarch64-linux-1.48, riscv64-linux-1.48, s390x-linux-1.48, mipsel-linux-1.48, mips64el-linux-1.48, powerpc64le-linux-1.48, arm-linux-1.48, macos-latest, macos-11]
+        build: [ubuntu, ubuntu-20.04, i686-linux, aarch64-linux, powerpc64le-linux, riscv64-linux, s390x-linux, arm-linux, ubuntu-stable, ubuntu-1.63, i686-linux-stable, aarch64-linux-stable, riscv64-linux-stable, s390x-linux-stable, mipsel-linux-stable, mips64el-linux-stable, powerpc64le-linux-stable, arm-linux-stable, ubuntu-1.63, i686-linux-1.63, aarch64-linux-1.63, riscv64-linux-1.63, s390x-linux-1.63, mipsel-linux-1.63, mips64el-linux-1.63, powerpc64le-linux-1.63, arm-linux-1.63, macos-latest, macos-11]
         include:
           - build: ubuntu
             os: ubuntu-latest
@@ -277,73 +276,73 @@ jobs:
             qemu: qemu-arm
             qemu_args: -L /usr/arm-linux-gnueabi
             qemu_target: arm-linux-user
-          - build: ubuntu-1.48
+          - build: ubuntu-1.63
             os: ubuntu-latest
-            rust: 1.48
-          - build: i686-linux-1.48
+            rust: 1.63
+          - build: i686-linux-1.63
             os: ubuntu-latest
-            rust: 1.48
+            rust: 1.63
             target: i686-unknown-linux-gnu
             gcc_package: gcc-i686-linux-gnu
             gcc: i686-linux-gnu-gcc
             libc_package: libc-dev-i386-cross
-          - build: aarch64-linux-1.48
+          - build: aarch64-linux-1.63
             os: ubuntu-latest
-            rust: 1.48
+            rust: 1.63
             target: aarch64-unknown-linux-gnu
             gcc_package: gcc-aarch64-linux-gnu
             gcc: aarch64-linux-gnu-gcc
             qemu: qemu-aarch64
             qemu_args: -L /usr/aarch64-linux-gnu
             qemu_target: aarch64-linux-user
-          - build: riscv64-linux-1.48
+          - build: riscv64-linux-1.63
             os: ubuntu-latest
-            rust: 1.48
+            rust: 1.63
             target: riscv64gc-unknown-linux-gnu
             gcc_package: gcc-riscv64-linux-gnu
             gcc: riscv64-linux-gnu-gcc
             qemu: qemu-riscv64
             qemu_args: -L /usr/riscv64-linux-gnu
             qemu_target: riscv64-linux-user
-          - build: s390x-linux-1.48
+          - build: s390x-linux-1.63
             os: ubuntu-latest
-            rust: 1.48
+            rust: 1.63
             target: s390x-unknown-linux-gnu
             gcc_package: gcc-s390x-linux-gnu
             gcc: s390x-linux-gnu-gcc
             qemu: qemu-s390x
             qemu_args: -L /usr/s390x-linux-gnu
             qemu_target: s390x-linux-user
-          - build: powerpc64le-linux-1.48
+          - build: powerpc64le-linux-1.63
             os: ubuntu-latest
-            rust: 1.48
+            rust: 1.63
             target: powerpc64le-unknown-linux-gnu
             gcc_package: gcc-powerpc64le-linux-gnu
             gcc: powerpc64le-linux-gnu-gcc
             qemu: qemu-ppc64le
             qemu_args: -L /usr/powerpc64le-linux-gnu
             qemu_target: ppc64le-linux-user
-          - build: mips64el-linux-1.48
+          - build: mips64el-linux-1.63
             os: ubuntu-latest
-            rust: 1.48
+            rust: 1.63
             target: mips64el-unknown-linux-gnuabi64
             gcc_package: gcc-mips64el-linux-gnuabi64
             gcc: mips64el-linux-gnuabi64-gcc
             qemu: qemu-mips64el
             qemu_args: -L /usr/mips64el-linux-gnuabi64
             qemu_target: mips64el-linux-user
-          - build: mipsel-linux-1.48
+          - build: mipsel-linux-1.63
             os: ubuntu-latest
-            rust: 1.48
+            rust: 1.63
             target: mipsel-unknown-linux-gnu
             gcc_package: gcc-mipsel-linux-gnu
             gcc: mipsel-linux-gnu-gcc
             qemu: qemu-mipsel
             qemu_args: -L /usr/mipsel-linux-gnu
             qemu_target: mipsel-linux-user
-          - build: arm-linux-1.48
+          - build: arm-linux-1.63
             os: ubuntu-latest
-            rust: 1.48
+            rust: 1.63
             target: armv5te-unknown-linux-gnueabi
             gcc_package: gcc-arm-linux-gnueabi
             gcc: arm-linux-gnueabi-gcc
@@ -419,41 +418,9 @@ jobs:
       if: matrix.qemu != '' && matrix.os == 'ubuntu-latest'
 
     - run: |
-        # Run the tests, and check the prebuilt release libraries.
+        # Run the tests.
         cargo test --verbose --release --workspace -- --nocapture
       env:
         RUST_BACKTRACE: full
         MACOSX_DEPLOYMENT_TARGET: 10.7
         MACOSX_SDK_VERSION: 10.7
-      if: matrix.rust != '1.48'
-
-    - run: |
-        # Run the tests with Rust 1.48, and check the prebuilt release libraries.
-        # Don't use all-impls because some of the impls have dependencies that
-        # don't support Rust 1.48.
-        cargo test --verbose --release --workspace -- --nocapture
-      env:
-        RUST_BACKTRACE: full
-        MACOSX_DEPLOYMENT_TARGET: 10.7
-        MACOSX_SDK_VERSION: 10.7
-      if: matrix.rust == '1.48'
-
-    - run: |
-        # Check the prebuilt debug libraries too.
-        cargo check
-      env:
-        RUST_BACKTRACE: full
-        MACOSX_DEPLOYMENT_TARGET: 10.7
-        MACOSX_SDK_VERSION: 10.7
-      if: matrix.rust != '1.48'
-
-    - run: |
-        # Check the prebuilt debug libraries with Rust 1.48 too.
-        # Don't use all-impls because some of the impls have dependencies that
-        # don't support Rust 1.48.
-        cargo check
-      env:
-        RUST_BACKTRACE: full
-        MACOSX_DEPLOYMENT_TARGET: 10.7
-        MACOSX_SDK_VERSION: 10.7
-      if: matrix.rust == '1.48'
