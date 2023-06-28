@@ -126,7 +126,7 @@ fn set_cloexec<Fd: AsFd>(fd: Fd) -> io::Result<()> {
 
 #[cfg(any(target_os = "android", target_os = "linux"))]
 fn open_user(controller: &OwnedFd, flags: rustix::pty::OpenptFlags) -> io::Result<OwnedFd> {
-    use rustix::fs::{cwd, openat, Mode};
+    use rustix::fs::{openat, Mode, CWD};
 
     // On Linux 4.13, we can use `ioctl_tiocgptpeer` as an optimization. But
     // don't try this on Android because Android's seccomp kills processes that
@@ -143,7 +143,7 @@ fn open_user(controller: &OwnedFd, flags: rustix::pty::OpenptFlags) -> io::Resul
     // Get the user device file name and open it.
     let name = rustix::pty::ptsname(controller, Vec::new())?;
 
-    openat(cwd(), name, flags.into(), Mode::empty())
+    openat(CWD, name, flags.into(), Mode::empty())
 }
 
 /// Prepare for a login on the given terminal.
@@ -179,9 +179,9 @@ fn _login_tty(fd: OwnedFd) -> io::Result<()> {
         rustix::process::ioctl_tiocsctty(&fd)?;
 
         // Install `fd` as our stdio.
-        rustix::io::dup2_stdin(&fd).ok();
-        rustix::io::dup2_stdout(&fd).ok();
-        rustix::io::dup2_stderr(&fd).ok();
+        rustix::stdio::dup2_stdin(&fd).ok();
+        rustix::stdio::dup2_stdout(&fd).ok();
+        rustix::stdio::dup2_stderr(&fd).ok();
 
         // If we overwrote the `fd` with our `dup2`s, don't close it now.
         if rustix::fd::AsRawFd::as_raw_fd(&fd) <= 2 {
@@ -202,10 +202,10 @@ fn _login_tty(fd: OwnedFd) -> io::Result<()> {
 pub unsafe fn closefrom(from: RawFd) {
     use core::mem::MaybeUninit;
     use core::str;
-    use rustix::fs::{cwd, openat, Mode, OFlags, RawDir};
+    use rustix::fs::{openat, Mode, OFlags, RawDir, CWD};
 
     let dir = openat(
-        cwd(),
+        CWD,
         rustix::cstr!("/dev/fd"),
         OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC,
         Mode::empty(),
