@@ -8,7 +8,9 @@
 //! [Linux]: https://man7.org/linux/man-pages/man7/pty.7.html
 //! [FreeBSD]: https://man.freebsd.org/cgi/man.cgi?query=pty&sektion=4
 
-use rustix::fd::{AsFd, AsRawFd, OwnedFd, RawFd};
+use rustix::fd::{AsFd, OwnedFd};
+#[cfg(any(target_os = "android", target_os = "linux"))] // for `RawDir`
+use rustix::fd::{AsRawFd, RawFd};
 use rustix::io;
 use rustix::termios::{Termios, Winsize};
 
@@ -52,12 +54,18 @@ pub fn openpty(termios: Option<&Termios>, winsize: Option<&Winsize>) -> io::Resu
     // to set `CLOEXEC` so we do it non-atomically.
     #[cfg(not(any(target_os = "android", target_os = "linux")))]
     {
-        use core::mem::MaybeUninit;
+        use core::mem::{align_of, size_of, MaybeUninit};
         use core::ptr::{null, null_mut};
         use rustix::fd::FromRawFd;
 
+        assert_eq!(size_of::<Termios>(), size_of::<libc::termios>());
+        assert_eq!(align_of::<Termios>(), align_of::<libc::termios>());
+
         let termios: *const libc::termios = match termios {
-            Some(termios) => termios,
+            Some(termios) => {
+                let termios: *const Termios = termios;
+                termios.cast()
+            }
             None => null(),
         };
         let winsize: *const libc::winsize = match winsize {
@@ -126,7 +134,7 @@ fn set_cloexec<Fd: AsFd>(fd: Fd) -> io::Result<()> {
 
 #[cfg(any(target_os = "android", target_os = "linux"))]
 fn open_user(controller: &OwnedFd, flags: rustix::pty::OpenptFlags) -> io::Result<OwnedFd> {
-    use rustix::fs::{cwd, openat, Mode};
+    use rustix::fs::{openat, Mode, CWD};
 
     // On Linux 4.13, we can use `ioctl_tiocgptpeer` as an optimization. But
     // don't try this on Android because Android's seccomp kills processes that
@@ -143,7 +151,7 @@ fn open_user(controller: &OwnedFd, flags: rustix::pty::OpenptFlags) -> io::Resul
     // Get the user device file name and open it.
     let name = rustix::pty::ptsname(controller, Vec::new())?;
 
-    openat(cwd(), name, flags.into(), Mode::empty())
+    openat(CWD, name, flags.into(), Mode::empty())
 }
 
 /// Prepare for a login on the given terminal.
@@ -179,9 +187,9 @@ fn _login_tty(fd: OwnedFd) -> io::Result<()> {
         rustix::process::ioctl_tiocsctty(&fd)?;
 
         // Install `fd` as our stdio.
-        rustix::io::dup2_stdin(&fd).ok();
-        rustix::io::dup2_stdout(&fd).ok();
-        rustix::io::dup2_stderr(&fd).ok();
+        rustix::stdio::dup2_stdin(&fd).ok();
+        rustix::stdio::dup2_stdout(&fd).ok();
+        rustix::stdio::dup2_stderr(&fd).ok();
 
         // If we overwrote the `fd` with our `dup2`s, don't close it now.
         if rustix::fd::AsRawFd::as_raw_fd(&fd) <= 2 {
@@ -199,13 +207,14 @@ fn _login_tty(fd: OwnedFd) -> io::Result<()> {
 /// This can close files out from underneath libraries, leaving them holding
 /// dangling file descriptors. It's meant for use in spawning new processes
 /// where the existing process state is about to be overwritten anyway.
+#[cfg(any(target_os = "android", target_os = "linux"))] // for `RawDir`
 pub unsafe fn closefrom(from: RawFd) {
     use core::mem::MaybeUninit;
     use core::str;
-    use rustix::fs::{cwd, openat, Mode, OFlags, RawDir};
+    use rustix::fs::{openat, Mode, OFlags, RawDir, CWD};
 
     let dir = openat(
-        cwd(),
+        CWD,
         rustix::cstr!("/dev/fd"),
         OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC,
         Mode::empty(),
