@@ -16,7 +16,7 @@ rust-version = "1.63"
 rustix = { version = "0.38.0", default-features = false, features = ["fs", "process", "pty", "stdio", "termios"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "linux")))'.dependencies]
-rustix = { version = "0.38.0", default-features = false, features = [] }
+rustix = { version = "0.38.0", default-features = false, features = ["fs", "termios"] }
 libc = { version = "0.2.114", default-features = false }
 errno = { version = "0.3.1", default-features = false }
 
