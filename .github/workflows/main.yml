@@ -154,15 +154,6 @@ jobs:
             qemu: qemu-ppc64le
             qemu_args: -L /usr/powerpc64le-linux-gnu
             qemu_target: ppc64le-linux-user
-          - build: mips64el-linux
-            os: ubuntu-latest
-            rust: nightly
-            target: mips64el-unknown-linux-gnuabi64
-            gcc_package: gcc-mips64el-linux-gnuabi64
-            gcc: mips64el-linux-gnuabi64-gcc
-            qemu: qemu-mips64el
-            qemu_args: -L /usr/mips64el-linux-gnuabi64
-            qemu_target: mips64el-linux-user
           - build: riscv64-linux
             os: ubuntu-latest
             rust: nightly
@@ -236,15 +227,6 @@ jobs:
             qemu: qemu-ppc64le
             qemu_args: -L /usr/powerpc64le-linux-gnu
             qemu_target: ppc64le-linux-user
-          - build: mips64el-linux-stable
-            os: ubuntu-latest
-            rust: stable
-            target: mips64el-unknown-linux-gnuabi64
-            gcc_package: gcc-mips64el-linux-gnuabi64
-            gcc: mips64el-linux-gnuabi64-gcc
-            qemu: qemu-mips64el
-            qemu_args: -L /usr/mips64el-linux-gnuabi64
-            qemu_target: mips64el-linux-user
           - build: arm-linux-stable
             os: ubuntu-latest
             rust: stable
@@ -300,15 +282,6 @@ jobs:
             qemu: qemu-ppc64le
             qemu_args: -L /usr/powerpc64le-linux-gnu
             qemu_target: ppc64le-linux-user
-          - build: mips64el-linux-1.63
-            os: ubuntu-latest
-            rust: 1.63
-            target: mips64el-unknown-linux-gnuabi64
-            gcc_package: gcc-mips64el-linux-gnuabi64
-            gcc: mips64el-linux-gnuabi64-gcc
-            qemu: qemu-mips64el
-            qemu_args: -L /usr/mips64el-linux-gnuabi64
-            qemu_target: mips64el-linux-user
           - build: arm-linux-1.63
             os: ubuntu-latest
             rust: 1.63
