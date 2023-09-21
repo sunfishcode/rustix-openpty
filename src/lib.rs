@@ -8,6 +8,12 @@
 //! [Linux]: https://man7.org/linux/man-pages/man7/pty.7.html
 //! [FreeBSD]: https://man.freebsd.org/cgi/man.cgi?query=pty&sektion=4
 
+#![no_std]
+
+extern crate alloc;
+
+#[cfg(any(target_os = "android", target_os = "linux"))]
+use alloc::vec::Vec;
 use rustix::fd::{AsFd, OwnedFd};
 #[cfg(any(target_os = "android", target_os = "linux"))] // for `RawDir`
 use rustix::fd::{AsRawFd, RawFd};
