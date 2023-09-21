@@ -13,7 +13,7 @@ include = ["src", "Cargo.toml", "COPYRIGHT", "LICENSE*", "/*.md"]
 rust-version = "1.63"
 
 [target.'cfg(any(target_os = "android", target_os = "linux"))'.dependencies]
-rustix = { version = "0.38.0", default-features = false, features = ["fs", "process", "pty", "stdio", "termios"] }
+rustix = { version = "0.38.0", default-features = false, features = ["alloc", "fs", "process", "pty", "stdio", "termios"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "linux")))'.dependencies]
 rustix = { version = "0.38.0", default-features = false, features = ["fs", "termios"] }
