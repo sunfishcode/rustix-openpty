@@ -37,7 +37,7 @@ pub struct Pty {
 ///
 /// On many platforms, this includes a call to [`libc::grantpt`], which has
 /// unspecified behavior if the calling process has a `SIGCHLD` signal handler
-/// installe.
+/// installed.
 ///
 /// # References
 ///  - [Linux]
@@ -49,6 +49,7 @@ pub struct Pty {
 /// [Apple]: https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/openpty.3.html
 /// [FreeBSD]: https://man.freebsd.org/cgi/man.cgi?query=openpty&sektion=3
 /// [glibc]: https://www.gnu.org/software/libc/manual/html_node/Pseudo_002dTerminal-Pairs.html#index-openpty
+/// [`libc::grantpt`]: https://docs.rs/libc/latest/libc/fn.grantpt.html
 pub fn openpty(termios: Option<&Termios>, winsize: Option<&Winsize>) -> io::Result<Pty> {
     // On non-Linux platforms, use `libc::openpty`. This doesn't have any way
     // to set `CLOEXEC` so we do it non-atomically.
