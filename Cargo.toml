@@ -1,6 +1,6 @@
 [package]
 name = "rustix-openpty"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Dan Gohman <dev@sunfishcode.online>"]
 description = "Safe Rust bindings to `openpty` and related functions"
 documentation = "https://docs.rs/rustix-openpty"
