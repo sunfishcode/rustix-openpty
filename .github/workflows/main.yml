@@ -121,7 +121,7 @@ jobs:
       QEMU_BUILD_VERSION: 8.1.0
     strategy:
       matrix:
-        build: [ubuntu, ubuntu-20.04, i686-linux, aarch64-linux, powerpc64le-linux, riscv64-linux, s390x-linux, arm-linux, ubuntu-stable, ubuntu-1.63, i686-linux-stable, aarch64-linux-stable, riscv64-linux-stable, s390x-linux-stable, powerpc64le-linux-stable, arm-linux-stable, ubuntu-1.63, i686-linux-1.63, aarch64-linux-1.63, riscv64-linux-1.63, s390x-linux-1.63, powerpc64le-linux-1.63, arm-linux-1.63, macos-latest, macos-11]
+        build: [ubuntu, ubuntu-20.04, i686-linux, aarch64-linux, powerpc64le-linux, riscv64-linux, s390x-linux, arm-linux, ubuntu-stable, ubuntu-1.63, i686-linux-stable, aarch64-linux-stable, riscv64-linux-stable, s390x-linux-stable, powerpc64le-linux-stable, arm-linux-stable, ubuntu-1.63, i686-linux-1.63, aarch64-linux-1.63, riscv64-linux-1.63, s390x-linux-1.63, powerpc64le-linux-1.63, arm-linux-1.63, macos-latest, macos-13]
         include:
           - build: ubuntu
             os: ubuntu-latest
@@ -294,8 +294,8 @@ jobs:
           - build: macos-latest
             os: macos-latest
             rust: stable
-          - build: macos-11
-            os: macos-11
+          - build: macos-13
+            os: macos-13
             rust: stable
     steps:
     - uses: actions/checkout@v4
@@ -321,7 +321,7 @@ jobs:
       run: |
         set -ex
         sudo apt-get update
-        sudo apt-get install -y ${{ matrix.gcc_package }} ninja-build
+        sudo apt-get install -y ${{ matrix.gcc_package }} ninja-build libglib2.0-dev
         upcase=$(echo ${{ matrix.target }} | awk '{ print toupper($0) }' | sed 's/-/_/g')
         echo CARGO_TARGET_${upcase}_LINKER=${{ matrix.gcc }} >> $GITHUB_ENV
       if: matrix.gcc_package != '' && matrix.os == 'ubuntu-latest'

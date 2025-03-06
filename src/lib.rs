@@ -75,9 +75,18 @@ pub fn openpty(termios: Option<&Termios>, winsize: Option<&Winsize>) -> io::Resu
             }
             None => null(),
         };
-        let winsize: *const libc::winsize = match winsize {
-            Some(winsize) => winsize,
-            None => null(),
+        let mut libc_winsize: libc::winsize;
+        let winsize: *mut libc::winsize = match winsize {
+            Some(winsize) => {
+                libc_winsize = libc::winsize {
+                    ws_row: winsize.ws_row,
+                    ws_col: winsize.ws_col,
+                    ws_xpixel: winsize.ws_xpixel,
+                    ws_ypixel: winsize.ws_ypixel,
+                };
+                &mut libc_winsize
+            }
+            None => null_mut(),
         };
 
         let mut controller = MaybeUninit::<libc::c_int>::uninit();
@@ -88,7 +97,7 @@ pub fn openpty(termios: Option<&Termios>, winsize: Option<&Winsize>) -> io::Resu
                 user.as_mut_ptr(),
                 null_mut(),
                 termios as _,
-                winsize as _,
+                winsize,
             ) == 0
             {
                 let controller = OwnedFd::from_raw_fd(controller.assume_init());
@@ -118,6 +127,89 @@ pub fn openpty(termios: Option<&Termios>, winsize: Option<&Winsize>) -> io::Resu
         grantpt(&controller)?;
         unlockpt(&controller)?;
 
+        let user = open_user(&controller, flags | OpenptFlags::CLOEXEC)?;
+
+        if let Some(termios) = termios {
+            tcsetattr(&user, OptionalActions::Now, termios)?;
+        }
+        if let Some(winsize) = winsize {
+            tcsetwinsize(&user, *winsize)?;
+        }
+
+        Ok(Pty { controller, user })
+    }
+}
+
+/// Open a pseudoterminal, without setting `OFlags::CLOEXEC`.
+///
+/// This is identical to [`openpty`], except that it does not set
+/// `OFlags::CLOEXEC` on the controller file descriptor. This more closely
+/// matches how `libc::openpty` works.
+pub fn openpty_nocloexec(termios: Option<&Termios>, winsize: Option<&Winsize>) -> io::Result<Pty> {
+    // On non-Linux platforms, use `libc::openpty`.
+    #[cfg(not(any(target_os = "android", target_os = "linux")))]
+    {
+        use core::mem::{align_of, size_of, MaybeUninit};
+        use core::ptr::{null, null_mut};
+        use rustix::fd::FromRawFd;
+
+        assert_eq!(size_of::<Termios>(), size_of::<libc::termios>());
+        assert_eq!(align_of::<Termios>(), align_of::<libc::termios>());
+
+        let termios: *const libc::termios = match termios {
+            Some(termios) => {
+                let termios: *const Termios = termios;
+                termios.cast()
+            }
+            None => null(),
+        };
+        let mut libc_winsize: libc::winsize;
+        let winsize: *mut libc::winsize = match winsize {
+            Some(winsize) => {
+                libc_winsize = libc::winsize {
+                    ws_row: winsize.ws_row,
+                    ws_col: winsize.ws_col,
+                    ws_xpixel: winsize.ws_xpixel,
+                    ws_ypixel: winsize.ws_ypixel,
+                };
+                &mut libc_winsize
+            }
+            None => null_mut(),
+        };
+
+        let mut controller = MaybeUninit::<libc::c_int>::uninit();
+        let mut user = MaybeUninit::<libc::c_int>::uninit();
+        unsafe {
+            if libc::openpty(
+                controller.as_mut_ptr(),
+                user.as_mut_ptr(),
+                null_mut(),
+                termios as _,
+                winsize,
+            ) == 0
+            {
+                let controller = OwnedFd::from_raw_fd(controller.assume_init());
+                let user = OwnedFd::from_raw_fd(user.assume_init());
+
+                Ok(Pty { controller, user })
+            } else {
+                Err(io::Errno::from_raw_os_error(errno::errno().0))
+            }
+        }
+    }
+
+    // On Linux platforms, use `rustix::pty`.
+    #[cfg(any(target_os = "android", target_os = "linux"))]
+    {
+        use rustix::pty::{grantpt, openpt, unlockpt, OpenptFlags};
+        use rustix::termios::{tcsetattr, tcsetwinsize, OptionalActions};
+
+        let flags = OpenptFlags::RDWR | OpenptFlags::NOCTTY;
+        let controller = openpt(flags)?;
+
+        grantpt(&controller)?;
+        unlockpt(&controller)?;
+
         let user = open_user(&controller, flags)?;
 
         if let Some(termios) = termios {
@@ -133,7 +225,7 @@ pub fn openpty(termios: Option<&Termios>, winsize: Option<&Winsize>) -> io::Resu
 
 #[cfg(not(any(target_os = "android", target_os = "linux")))]
 fn set_cloexec<Fd: AsFd>(fd: Fd) -> io::Result<()> {
-    use rustix::fs::{fcntl_getfd, fcntl_setfd, FdFlags};
+    use rustix::io::{fcntl_getfd, fcntl_setfd, FdFlags};
 
     let fd = fd.as_fd();
     fcntl_setfd(fd, fcntl_getfd(fd)? | FdFlags::CLOEXEC)
@@ -146,7 +238,7 @@ fn open_user(controller: &OwnedFd, flags: rustix::pty::OpenptFlags) -> io::Resul
     // On Linux 4.13, we can use `ioctl_tiocgptpeer` as an optimization. But
     // don't try this on Android because Android's seccomp kills processes that
     // try to optimize.
-    #[cfg(all(linux_like, not(target_os = "android")))]
+    #[cfg(not(target_os = "android"))]
     {
         match rustix::pty::ioctl_tiocgptpeer(controller, flags) {
             Ok(fd) => return Ok(fd),
